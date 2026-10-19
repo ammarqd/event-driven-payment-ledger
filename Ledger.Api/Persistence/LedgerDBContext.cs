@@ -48,6 +48,16 @@ public class LedgerDbContext : DbContext
             entry.Property(e => e.Currency)
                 .HasColumnName("currency")
                 .HasColumnType("char(3)");
+
+            entry.HasOne<TransactionRow>()
+                .WithMany()
+                .HasForeignKey(e => e.TransactionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entry.HasOne<AccountRow>()
+                .WithMany()
+                .HasForeignKey(e => e.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
