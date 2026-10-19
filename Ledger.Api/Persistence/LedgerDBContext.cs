@@ -11,6 +11,7 @@ public class LedgerDbContext : DbContext
 
     public DbSet<AccountRow> Accounts => Set<AccountRow>();
     public DbSet<TransactionRow> Transactions => Set<TransactionRow>();
+    public DbSet<EntryRow> Entries => Set<EntryRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +33,21 @@ public class LedgerDbContext : DbContext
 
             transaction.Property(t => t.Id).HasColumnName("id");
             transaction.Property(t => t.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<EntryRow>(entry =>
+        {
+            entry.ToTable("entries", table =>
+                table.HasCheckConstraint("ck_entries_currency", "currency ~ '^[A-Z]{3}$'"));
+
+            entry.Property(e => e.Id).HasColumnName("id");
+            entry.Property(e => e.TransactionId).HasColumnName("transaction_id");
+            entry.Property(e => e.AccountId).HasColumnName("account_id");
+            entry.Property(e => e.MinorUnits).HasColumnName("minor_units");
+
+            entry.Property(e => e.Currency)
+                .HasColumnName("currency")
+                .HasColumnType("char(3)");
         });
     }
 }
