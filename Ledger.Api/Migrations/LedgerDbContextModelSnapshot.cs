@@ -41,6 +41,22 @@ namespace Ledger.Api.Migrations
                             t.HasCheckConstraint("ck_accounts_currency", "currency ~ '^[A-Z]{3}$'");
                         });
                 });
+
+            modelBuilder.Entity("Ledger.Api.Persistence.TransactionRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("transactions", (string)null);
+                });
 #pragma warning restore 612, 618
         }
     }
