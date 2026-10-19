@@ -42,6 +42,42 @@ namespace Ledger.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Ledger.Api.Persistence.EntryRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("char(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<long>("MinorUnits")
+                        .HasColumnType("bigint")
+                        .HasColumnName("minor_units");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transaction_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("TransactionId");
+
+                    b.ToTable("entries", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_entries_currency", "currency ~ '^[A-Z]{3}$'");
+                        });
+                });
+
             modelBuilder.Entity("Ledger.Api.Persistence.TransactionRow", b =>
                 {
                     b.Property<Guid>("Id")
@@ -56,6 +92,21 @@ namespace Ledger.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("transactions", (string)null);
+                });
+
+            modelBuilder.Entity("Ledger.Api.Persistence.EntryRow", b =>
+                {
+                    b.HasOne("Ledger.Api.Persistence.AccountRow", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Ledger.Api.Persistence.TransactionRow", null)
+                        .WithMany()
+                        .HasForeignKey("TransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
