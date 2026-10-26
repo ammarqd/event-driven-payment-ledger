@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="Ledger.Api.Tests/Ledger.Api.Tests.csproj" />
   <Project Path="Ledger.Api/Ledger.Api.csproj" />
   <Project Path="Ledger.Domain.Tests/Ledger.Domain.Tests.csproj" />
   <Project Path="Ledger.Domain/Ledger.Domain.csproj" />

@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Ledger.Domain.Tests;
 
 public class MoneyTests
