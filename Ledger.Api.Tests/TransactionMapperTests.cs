@@ -22,4 +22,19 @@ public class TransactionMapperTests
         Assert.Equal(id, row.Id);
         Assert.Equal(createdAt, row.CreatedAt);
     }
+
+    [Fact]
+    public void ToEntryRow_FlattensMoneyIntoTwoColumns()
+    {
+        var transactionId = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
+        var entry = new Entry(accountId, new Money(-1000, "GBP"));
+
+        var row = TransactionMapper.ToEntryRow(transactionId, entry);
+
+        Assert.Equal(transactionId, row.TransactionId);
+        Assert.Equal(accountId, row.AccountId);
+        Assert.Equal(-1000, row.MinorUnits);
+        Assert.Equal("GBP", row.Currency);
+    }
 }
