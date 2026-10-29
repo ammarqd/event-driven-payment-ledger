@@ -55,4 +55,28 @@ public class TransactionMapperTests
 
         Assert.Equal(new Entry(accountId, new Money(-1000, "GBP")), entry);
     }
+
+    [Fact]
+    public void ToTransaction_RebuildsTransactionFromRows()
+    {
+        var transactionId = Guid.NewGuid();
+        var createdAt = DateTimeOffset.UtcNow;
+        var accountA = Guid.NewGuid();
+        var accountB = Guid.NewGuid();
+
+        var transactionRow = new TransactionRow { Id = transactionId, CreatedAt = createdAt };
+        EntryRow[] entryRows =
+        [
+            new() { Id = Guid.NewGuid(), TransactionId = transactionId, AccountId = accountA, MinorUnits = -1000, Currency = "GBP" },
+            new() { Id = Guid.NewGuid(), TransactionId = transactionId, AccountId = accountB, MinorUnits = 1000, Currency = "GBP" },
+        ];
+
+        var transaction = TransactionMapper.ToTransaction(transactionRow, entryRows);
+
+        Assert.Equal(transactionId, transaction.Id);
+        Assert.Equal(createdAt, transaction.CreatedAt);
+        Assert.Equal(2, transaction.Entries.Count);
+        Assert.Equal(new Entry(accountA, new Money(-1000, "GBP")), transaction.Entries[0]);
+        Assert.Equal(new Entry(accountB, new Money(1000, "GBP")), transaction.Entries[1]);
+    }
 }
