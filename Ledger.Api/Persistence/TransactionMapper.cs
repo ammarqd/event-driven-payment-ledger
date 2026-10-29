@@ -20,4 +20,7 @@ public static class TransactionMapper
 
     public static Entry ToEntry(EntryRow row) =>
         new(row.AccountId, new Money(row.MinorUnits, row.Currency));
+
+    public static Transaction ToTransaction(TransactionRow row, IEnumerable<EntryRow> entryRows) =>
+        new(row.Id, row.CreatedAt, entryRows.Select(ToEntry));
 }
