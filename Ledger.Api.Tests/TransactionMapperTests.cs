@@ -37,4 +37,22 @@ public class TransactionMapperTests
         Assert.Equal(-1000, row.MinorUnits);
         Assert.Equal("GBP", row.Currency);
     }
+
+    [Fact]
+    public void ToEntry_JoinsColumnsBackIntoMoney()
+    {
+        var accountId = Guid.NewGuid();
+        var row = new EntryRow
+        {
+            Id = Guid.NewGuid(),
+            TransactionId = Guid.NewGuid(),
+            AccountId = accountId,
+            MinorUnits = -1000,
+            Currency = "GBP",
+        };
+
+        var entry = TransactionMapper.ToEntry(row);
+
+        Assert.Equal(new Entry(accountId, new Money(-1000, "GBP")), entry);
+    }
 }
