@@ -38,10 +38,31 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         }
 
         await using var check = _fixture.CreateContext();
-        var savedEntries = await check.Entries
-            .Where(e => e.TransactionId == transaction.Id)
-            .ToListAsync();
+        var savedCount = await check.Entries
+            .CountAsync(e => e.TransactionId == transaction.Id);
 
-        Assert.Equal(2, savedEntries.Count);
+        Assert.Equal(2, savedCount);
+    }
+
+    [Fact]
+    public async Task PostAsync_UnknownAccount_SavesNothing()
+    {
+        Entry[] entries =
+        [
+            new(Guid.NewGuid(), new Money(-1000, "GBP")),
+            new(Guid.NewGuid(), new Money(1000, "GBP")),
+        ];
+        var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
+
+        await using (var db = _fixture.CreateContext())
+        {
+            await Assert.ThrowsAsync<DbUpdateException>(
+                () => new LedgerService(db).PostAsync(transaction));
+        }
+
+        await using var check = _fixture.CreateContext();
+        var saved = await check.Transactions.CountAsync(t => t.Id == transaction.Id);
+
+        Assert.Equal(0, saved);
     }
 }
