@@ -79,4 +79,19 @@ public class TransactionMapperTests
         Assert.Equal(new Entry(accountA, new Money(-1000, "GBP")), transaction.Entries[0]);
         Assert.Equal(new Entry(accountB, new Money(1000, "GBP")), transaction.Entries[1]);
     }
+
+    [Fact]
+    public void ToTransaction_UnbalancedRows_Throws()
+    {
+        var transactionId = Guid.NewGuid();
+        var transactionRow = new TransactionRow { Id = transactionId, CreatedAt = DateTimeOffset.UtcNow };
+        EntryRow[] entryRows =
+        [
+            new() { Id = Guid.NewGuid(), TransactionId = transactionId, AccountId = Guid.NewGuid(), MinorUnits = -1000, Currency = "GBP" },
+            new() { Id = Guid.NewGuid(), TransactionId = transactionId, AccountId = Guid.NewGuid(), MinorUnits = 900, Currency = "GBP" },
+        ];
+
+        Assert.Throws<ArgumentException>(
+            () => TransactionMapper.ToTransaction(transactionRow, entryRows));
+    }
 }
