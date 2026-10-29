@@ -17,4 +17,7 @@ public static class TransactionMapper
         MinorUnits = entry.Amount.MinorUnits,
         Currency = entry.Amount.Currency,
     };
+
+    public static Entry ToEntry(EntryRow row) =>
+        new(row.AccountId, new Money(row.MinorUnits, row.Currency));
 }
