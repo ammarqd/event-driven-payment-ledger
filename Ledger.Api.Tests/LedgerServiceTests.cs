@@ -65,4 +65,33 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         Assert.Equal(0, saved);
     }
+
+    [Fact]
+    public async Task GetBalanceAsync_SumsEntriesPerAccount()
+    {
+        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+        var accountB = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+        var accountC = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+
+        await using (var setup = _fixture.CreateContext())
+        {
+            setup.Accounts.AddRange(accountA, accountB, accountC);
+            await setup.SaveChangesAsync();
+        }
+
+        Entry[] entries =
+        [
+            new(accountA.Id, new Money(-1000, "GBP")),
+            new(accountB.Id, new Money(1000, "GBP")),
+        ];
+        var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
+
+        await using var db = _fixture.CreateContext();
+        var service = new LedgerService(db);
+        await service.PostAsync(transaction);
+
+        Assert.Equal(new Money(-1000, "GBP"), await service.GetBalanceAsync(accountA.Id));
+        Assert.Equal(new Money(1000, "GBP"), await service.GetBalanceAsync(accountB.Id));
+        Assert.Equal(Money.Zero("GBP"), await service.GetBalanceAsync(accountC.Id));
+    }
 }
