@@ -25,6 +25,8 @@ public class LedgerDbContext : DbContext
             account.Property(a => a.Currency)
                 .HasColumnName("currency")
                 .HasColumnType("char(3)");
+
+            account.Property(a => a.AllowNegative).HasColumnName("allow_negative");
         });
 
         modelBuilder.Entity<TransactionRow>(transaction =>
