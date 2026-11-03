@@ -16,6 +16,23 @@ public class LedgerService
     {
         await using var dbTransaction = await _db.Database.BeginTransactionAsync();
 
+        var accountIds = transaction.Entries
+            .Select(e => e.AccountId)
+            .Distinct()
+            .OrderBy(id => id)
+            .ToList();
+
+        var found = await _db.Accounts
+            .Where(a => accountIds.Contains(a.Id))
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        foreach (var id in accountIds)
+        {
+            if (!found.Contains(id))
+                throw new AccountNotFoundException(id);
+        }
+
         _db.Transactions.Add(TransactionMapper.ToRow(transaction));
         _db.Entries.AddRange(
             transaction.Entries.Select(e => TransactionMapper.ToEntryRow(transaction.Id, e)));

@@ -56,7 +56,7 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         await using (var db = _fixture.CreateContext())
         {
-            await Assert.ThrowsAsync<DbUpdateException>(
+            await Assert.ThrowsAsync<AccountNotFoundException>(
                 () => new LedgerService(db).PostAsync(transaction));
         }
 
