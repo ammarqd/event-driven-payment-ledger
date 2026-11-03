@@ -14,11 +14,14 @@ public class LedgerService
 
     public async Task PostAsync(Transaction transaction)
     {
+        await using var dbTransaction = await _db.Database.BeginTransactionAsync();
+
         _db.Transactions.Add(TransactionMapper.ToRow(transaction));
         _db.Entries.AddRange(
             transaction.Entries.Select(e => TransactionMapper.ToEntryRow(transaction.Id, e)));
 
         await _db.SaveChangesAsync();
+        await dbTransaction.CommitAsync();
     }
     
     public async Task<Money> GetBalanceAsync(Guid accountId)
