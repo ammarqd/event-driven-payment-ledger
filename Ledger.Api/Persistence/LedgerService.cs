@@ -22,15 +22,22 @@ public class LedgerService
             .OrderBy(id => id)
             .ToList();
 
-        var found = await _db.Accounts
+        var accounts = await _db.Accounts
             .Where(a => accountIds.Contains(a.Id))
-            .Select(a => a.Id)
-            .ToListAsync();
+            .ToDictionaryAsync(a => a.Id);
 
         foreach (var id in accountIds)
         {
-            if (!found.Contains(id))
+            if (!accounts.ContainsKey(id))
                 throw new AccountNotFoundException(id);
+        }
+
+        foreach (var entry in transaction.Entries)
+        {
+            var account = accounts[entry.AccountId];
+            if (entry.Amount.Currency != account.Currency)
+                throw new CurrencyMismatchException(
+                    entry.AccountId, account.Currency, entry.Amount.Currency);
         }
 
         _db.Transactions.Add(TransactionMapper.ToRow(transaction));

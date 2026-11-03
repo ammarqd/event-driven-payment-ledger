@@ -94,4 +94,37 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         Assert.Equal(new Money(1000, "GBP"), await service.GetBalanceAsync(accountB.Id));
         Assert.Equal(Money.Zero("GBP"), await service.GetBalanceAsync(accountC.Id));
     }
+
+    [Fact]
+    public async Task PostAsync_CurrencyMismatch_SavesNothing()
+    {
+        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+        var accountB = new AccountRow { Id = Guid.NewGuid(), Currency = "USD" };
+
+        await using (var setup = _fixture.CreateContext())
+        {
+            setup.Accounts.AddRange(accountA, accountB);
+            await setup.SaveChangesAsync();
+        }
+
+        // Balanced in GBP, so the domain accepts it, but accountB holds USD.
+        Entry[] entries =
+        [
+            new(accountA.Id, new Money(-1000, "GBP")),
+            new(accountB.Id, new Money(1000, "GBP")),
+        ];
+        var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
+
+        await using (var db = _fixture.CreateContext())
+        {
+            var ex = await Assert.ThrowsAsync<CurrencyMismatchException>(
+                () => new LedgerService(db).PostAsync(transaction));
+            Assert.Equal(accountB.Id, ex.AccountId);
+        }
+
+        await using var check = _fixture.CreateContext();
+        var saved = await check.Transactions.CountAsync(t => t.Id == transaction.Id);
+
+        Assert.Equal(0, saved);
+    }
 }
