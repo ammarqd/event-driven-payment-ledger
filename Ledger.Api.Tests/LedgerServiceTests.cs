@@ -16,7 +16,7 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
     [Fact]
     public async Task PostAsync_SavesTransactionAndEntries()
     {
-        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", AllowNegative = true };
         var accountB = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
 
         await using (var setup = _fixture.CreateContext())
@@ -69,7 +69,7 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
     [Fact]
     public async Task GetBalanceAsync_SumsEntriesPerAccount()
     {
-        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", AllowNegative = true };
         var accountB = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
         var accountC = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
 
@@ -124,6 +124,52 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         await using var check = _fixture.CreateContext();
         var saved = await check.Transactions.CountAsync(t => t.Id == transaction.Id);
+
+        Assert.Equal(0, saved);
+    }
+
+    [Fact]
+    public async Task PostAsync_InsufficientFunds_SavesNothing()
+    {
+        var system = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", AllowNegative = true };
+        var customer = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+
+        await using (var setup = _fixture.CreateContext())
+        {
+            setup.Accounts.AddRange(system, customer);
+            await setup.SaveChangesAsync();
+        }
+
+        // Deposit 500 so the customer has a real balance.
+        Entry[] depositEntries =
+        [
+            new(system.Id, new Money(-500, "GBP")),
+            new(customer.Id, new Money(500, "GBP")),
+        ];
+        var deposit = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, depositEntries);
+
+        await using (var db = _fixture.CreateContext())
+        {
+            await new LedgerService(db).PostAsync(deposit);
+        }
+
+        // Withdraw 600 from a balance of 500.
+        Entry[] withdrawEntries =
+        [
+            new(customer.Id, new Money(-600, "GBP")),
+            new(system.Id, new Money(600, "GBP")),
+        ];
+        var withdrawal = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, withdrawEntries);
+
+        await using (var db = _fixture.CreateContext())
+        {
+            var ex = await Assert.ThrowsAsync<InsufficientFundsException>(
+                () => new LedgerService(db).PostAsync(withdrawal));
+            Assert.Equal(customer.Id, ex.AccountId);
+        }
+
+        await using var check = _fixture.CreateContext();
+        var saved = await check.Transactions.CountAsync(t => t.Id == withdrawal.Id);
 
         Assert.Equal(0, saved);
     }
