@@ -43,21 +43,19 @@ public class LedgerService
             .GroupBy(e => e.AccountId)
             .ToDictionary(g => g.Key, g => g.Sum(e => e.Amount.MinorUnits));
 
-        var balances = await _db.Entries
-            .Where(e => accountIds.Contains(e.AccountId))
-            .GroupBy(e => e.AccountId)
-            .Select(g => new { AccountId = g.Key, Total = g.Sum(e => e.MinorUnits) })
-            .ToDictionaryAsync(x => x.AccountId, x => x.Total);
-
         foreach (var (id, change) in changes)
         {
             var account = accounts[id];
             if (account.Type == AccountType.System)
                 continue;
 
-            var current = balances.GetValueOrDefault(id);
-            if (current + change < 0)
+            if (account.Balance + change < 0)
                 throw new InsufficientFundsException(id);
+        }
+
+        foreach (var (id, change) in changes)
+        {
+            accounts[id].Balance += change;
         }
 
         _db.Transactions.Add(TransactionMapper.ToRow(transaction));

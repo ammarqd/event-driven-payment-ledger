@@ -173,4 +173,52 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         Assert.Equal(0, saved);
     }
+
+    [Fact]
+    public async Task PostAsync_UpdatesStoredBalances()
+    {
+        var system = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
+        var customer = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+
+        await using (var setup = _fixture.CreateContext())
+        {
+            setup.Accounts.AddRange(system, customer);
+            await setup.SaveChangesAsync();
+        }
+
+        Entry[] depositEntries =
+        [
+            new(system.Id, new Money(-500, "GBP")),
+            new(customer.Id, new Money(500, "GBP")),
+        ];
+        Entry[] withdrawEntries =
+        [
+            new(customer.Id, new Money(-300, "GBP")),
+            new(system.Id, new Money(300, "GBP")),
+        ];
+
+        await using (var db = _fixture.CreateContext())
+        {
+            await new LedgerService(db).PostAsync(
+                new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, depositEntries));
+        }
+
+        await using (var db = _fixture.CreateContext())
+        {
+            await new LedgerService(db).PostAsync(
+                new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, withdrawEntries));
+        }
+
+        await using var check = _fixture.CreateContext();
+        var customerRow = await check.Accounts.SingleAsync(a => a.Id == customer.Id);
+        var systemRow = await check.Accounts.SingleAsync(a => a.Id == system.Id);
+
+        Assert.Equal(200, customerRow.Balance);
+        Assert.Equal(-200, systemRow.Balance);
+
+        var customerSum = await check.Entries
+            .Where(e => e.AccountId == customer.Id)
+            .SumAsync(e => e.MinorUnits);
+        Assert.Equal(customerSum, customerRow.Balance);
+    }
 }
