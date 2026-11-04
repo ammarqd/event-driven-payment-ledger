@@ -29,6 +29,10 @@ namespace Ledger.Api.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<long>("Balance")
+                        .HasColumnType("bigint")
+                        .HasColumnName("balance");
+
                     b.Property<string>("Currency")
                         .IsRequired()
                         .HasColumnType("char(3)")
