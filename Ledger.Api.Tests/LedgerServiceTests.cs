@@ -67,7 +67,7 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
     }
 
     [Fact]
-    public async Task GetBalanceAsync_SumsEntriesPerAccount()
+    public async Task GetBalanceAsync_ReturnsBalancePerAccount()
     {
         var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
         var accountB = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
