@@ -16,7 +16,7 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
     [Fact]
     public async Task PostAsync_SavesTransactionAndEntries()
     {
-        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", AllowNegative = true };
+        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
         var accountB = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
 
         await using (var setup = _fixture.CreateContext())
@@ -69,7 +69,7 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
     [Fact]
     public async Task GetBalanceAsync_SumsEntriesPerAccount()
     {
-        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", AllowNegative = true };
+        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
         var accountB = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
         var accountC = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
 
@@ -131,7 +131,7 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
     [Fact]
     public async Task PostAsync_InsufficientFunds_SavesNothing()
     {
-        var system = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", AllowNegative = true };
+        var system = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
         var customer = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
 
         await using (var setup = _fixture.CreateContext())

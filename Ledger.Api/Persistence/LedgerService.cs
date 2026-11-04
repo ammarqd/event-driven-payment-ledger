@@ -52,7 +52,7 @@ public class LedgerService
         foreach (var (id, change) in changes)
         {
             var account = accounts[id];
-            if (account.AllowNegative)
+            if (account.Type == AccountType.System)
                 continue;
 
             var current = balances.GetValueOrDefault(id);

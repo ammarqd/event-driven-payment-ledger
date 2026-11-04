@@ -29,14 +29,15 @@ namespace Ledger.Api.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<bool>("AllowNegative")
-                        .HasColumnType("boolean")
-                        .HasColumnName("allow_negative");
-
                     b.Property<string>("Currency")
                         .IsRequired()
                         .HasColumnType("char(3)")
                         .HasColumnName("currency");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("type");
 
                     b.HasKey("Id");
 
