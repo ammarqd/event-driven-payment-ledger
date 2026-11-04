@@ -22,13 +22,15 @@ public class LedgerDbContext : DbContext
 
             account.Property(a => a.Id).HasColumnName("id");
 
+            account.Property(a => a.Type)
+                .HasColumnName("type")
+                .HasConversion<string>();
+
             account.Property(a => a.Currency)
                 .HasColumnName("currency")
                 .HasColumnType("char(3)");
 
-            account.Property(a => a.Type)
-                .HasColumnName("type")
-                .HasConversion<string>();
+            account.Property(a => a.Balance).HasColumnName("balance");
         });
 
         modelBuilder.Entity<TransactionRow>(transaction =>
