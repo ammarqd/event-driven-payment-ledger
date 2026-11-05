@@ -12,7 +12,7 @@ public class LedgerService
         _db = db;
     }
 
-    public async Task PostAsync(Transaction transaction, string idempotencyKey)
+    public async Task<Guid> PostAsync(Transaction transaction, string idempotencyKey)
     {
         await using var dbTransaction = await _db.Database.BeginTransactionAsync();
 
@@ -24,6 +24,12 @@ public class LedgerService
         var accounts = await _db.Accounts
             .FromSql($"SELECT * FROM accounts WHERE id = ANY({accountIds}) ORDER BY id FOR UPDATE")
             .ToDictionaryAsync(a => a.Id);
+
+        var existing = await _db.IdempotencyKeys
+            .SingleOrDefaultAsync(k => k.Key == idempotencyKey);
+
+        if (existing is not null) 
+            return existing.TransactionId;
 
         foreach (var id in accountIds)
         {
@@ -70,6 +76,8 @@ public class LedgerService
 
         await _db.SaveChangesAsync();
         await dbTransaction.CommitAsync();
+
+        return transaction.Id;
     }
     
     public async Task<Money> GetBalanceAsync(Guid accountId)
