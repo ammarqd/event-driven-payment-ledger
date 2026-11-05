@@ -12,6 +12,7 @@ public class LedgerDbContext : DbContext
     public DbSet<AccountRow> Accounts => Set<AccountRow>();
     public DbSet<TransactionRow> Transactions => Set<TransactionRow>();
     public DbSet<EntryRow> Entries => Set<EntryRow>();
+    public DbSet<IdempotencyKeyRow> IdempotencyKeys => Set<IdempotencyKeyRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,6 +64,22 @@ public class LedgerDbContext : DbContext
             entry.HasOne<AccountRow>()
                 .WithMany()
                 .HasForeignKey(e => e.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<IdempotencyKeyRow>(key =>
+        {
+            key.ToTable("idempotency_keys");
+
+            key.HasKey(k => k.Key);
+
+            key.Property(k => k.Key).HasColumnName("key");
+            key.Property(k => k.TransactionId).HasColumnName("transaction_id");
+            key.Property(k => k.CreatedAt).HasColumnName("created_at");
+
+            key.HasOne<TransactionRow>()
+                .WithMany()
+                .HasForeignKey(k => k.TransactionId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }
