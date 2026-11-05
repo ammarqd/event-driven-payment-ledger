@@ -12,6 +12,22 @@ public class LedgerService
         _db = db;
     }
 
+    public async Task<Guid> CreateAccountAsync(string currency, AccountType type)
+    {
+        var row = new AccountRow
+        {
+            Id = Guid.NewGuid(),
+            Currency = Money.Zero(currency).Currency,
+            Type = type,
+            Balance = 0,
+        };
+
+        _db.Accounts.Add(row);
+        await _db.SaveChangesAsync();
+
+        return row.Id;
+    }
+
     public async Task<Guid> PostAsync(Transaction transaction, string idempotencyKey)
     {
         await using var dbTransaction = await _db.Database.BeginTransactionAsync();

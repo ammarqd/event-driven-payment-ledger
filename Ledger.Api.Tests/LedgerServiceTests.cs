@@ -347,7 +347,7 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
             new(system.Id, new Money(-100, "GBP")),
             new(customer.Id, new Money(100, "GBP")),
         ];
-        
+
         await using (var db = _fixture.CreateContext())
         {
             await new LedgerService(db).PostAsync(
@@ -384,5 +384,31 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         await using var check = _fixture.CreateContext();
         var customerRow = await check.Accounts.SingleAsync(a => a.Id == customer.Id);
         Assert.Equal(0, customerRow.Balance);
+    }
+
+    [Fact]
+    public async Task CreateAccountAsync_SavesAccountWithZeroBalance()
+    {
+        Guid id;
+        await using (var db = _fixture.CreateContext())
+        {
+            id = await new LedgerService(db).CreateAccountAsync("gbp", AccountType.Customer);
+        }
+
+        await using var check = _fixture.CreateContext();
+        var row = await check.Accounts.SingleAsync(a => a.Id == id);
+
+        Assert.Equal("GBP", row.Currency);
+        Assert.Equal(AccountType.Customer, row.Type);
+        Assert.Equal(0, row.Balance);
+    }
+
+    [Fact]
+    public async Task CreateAccountAsync_InvalidCurrency_Throws()
+    {
+        await using var db = _fixture.CreateContext();
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => new LedgerService(db).CreateAccountAsync("GB", AccountType.Customer));
     }
 }
