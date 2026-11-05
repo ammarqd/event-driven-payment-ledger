@@ -12,7 +12,7 @@ public class LedgerService
         _db = db;
     }
 
-    public async Task PostAsync(Transaction transaction)
+    public async Task PostAsync(Transaction transaction, string idempotencyKey)
     {
         await using var dbTransaction = await _db.Database.BeginTransactionAsync();
 
@@ -61,6 +61,12 @@ public class LedgerService
         _db.Transactions.Add(TransactionMapper.ToRow(transaction));
         _db.Entries.AddRange(
             transaction.Entries.Select(e => TransactionMapper.ToEntryRow(transaction.Id, e)));
+        _db.IdempotencyKeys.Add(new IdempotencyKeyRow
+        {
+            Key = idempotencyKey,
+            TransactionId = transaction.Id,
+            CreatedAt = DateTimeOffset.UtcNow,
+        });
 
         await _db.SaveChangesAsync();
         await dbTransaction.CommitAsync();

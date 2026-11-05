@@ -16,25 +16,25 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
     [Fact]
     public async Task PostAsync_SavesTransactionAndEntries()
     {
-        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
-        var accountB = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+        var system = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
+        var customer = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
 
         await using (var setup = _fixture.CreateContext())
         {
-            setup.Accounts.AddRange(accountA, accountB);
+            setup.Accounts.AddRange(system, customer);
             await setup.SaveChangesAsync();
         }
 
         Entry[] entries =
         [
-            new(accountA.Id, new Money(-1000, "GBP")),
-            new(accountB.Id, new Money(1000, "GBP")),
+            new(system.Id, new Money(-1000, "GBP")),
+            new(customer.Id, new Money(1000, "GBP")),
         ];
         var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
 
         await using (var db = _fixture.CreateContext())
         {
-            await new LedgerService(db).PostAsync(transaction);
+            await new LedgerService(db).PostAsync(transaction, Guid.NewGuid().ToString());
         }
 
         await using var check = _fixture.CreateContext();
@@ -57,7 +57,7 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         await using (var db = _fixture.CreateContext())
         {
             await Assert.ThrowsAsync<AccountNotFoundException>(
-                () => new LedgerService(db).PostAsync(transaction));
+                () => new LedgerService(db).PostAsync(transaction, Guid.NewGuid().ToString()));
         }
 
         await using var check = _fixture.CreateContext();
@@ -69,30 +69,30 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
     [Fact]
     public async Task GetBalanceAsync_ReturnsBalancePerAccount()
     {
-        var accountA = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
-        var accountB = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
-        var accountC = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+        var system = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
+        var customer = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+        var idle = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
 
         await using (var setup = _fixture.CreateContext())
         {
-            setup.Accounts.AddRange(accountA, accountB, accountC);
+            setup.Accounts.AddRange(system, customer, idle);
             await setup.SaveChangesAsync();
         }
 
         Entry[] entries =
         [
-            new(accountA.Id, new Money(-1000, "GBP")),
-            new(accountB.Id, new Money(1000, "GBP")),
+            new(system.Id, new Money(-1000, "GBP")),
+            new(customer.Id, new Money(1000, "GBP")),
         ];
         var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
 
         await using var db = _fixture.CreateContext();
         var service = new LedgerService(db);
-        await service.PostAsync(transaction);
+        await service.PostAsync(transaction, Guid.NewGuid().ToString());
 
-        Assert.Equal(new Money(-1000, "GBP"), await service.GetBalanceAsync(accountA.Id));
-        Assert.Equal(new Money(1000, "GBP"), await service.GetBalanceAsync(accountB.Id));
-        Assert.Equal(Money.Zero("GBP"), await service.GetBalanceAsync(accountC.Id));
+        Assert.Equal(new Money(-1000, "GBP"), await service.GetBalanceAsync(system.Id));
+        Assert.Equal(new Money(1000, "GBP"), await service.GetBalanceAsync(customer.Id));
+        Assert.Equal(Money.Zero("GBP"), await service.GetBalanceAsync(idle.Id));
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         await using (var db = _fixture.CreateContext())
         {
             var ex = await Assert.ThrowsAsync<CurrencyMismatchException>(
-                () => new LedgerService(db).PostAsync(transaction));
+                () => new LedgerService(db).PostAsync(transaction, Guid.NewGuid().ToString()));
             Assert.Equal(accountB.Id, ex.AccountId);
         }
 
@@ -150,21 +150,21 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         await using (var db = _fixture.CreateContext())
         {
-            await new LedgerService(db).PostAsync(deposit);
+            await new LedgerService(db).PostAsync(deposit, Guid.NewGuid().ToString());
         }
 
         // Withdraw 600 from a balance of 500.
-        Entry[] withdrawEntries =
+        Entry[] withdrawalEntries =
         [
             new(customer.Id, new Money(-600, "GBP")),
             new(system.Id, new Money(600, "GBP")),
         ];
-        var withdrawal = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, withdrawEntries);
+        var withdrawal = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, withdrawalEntries);
 
         await using (var db = _fixture.CreateContext())
         {
             var ex = await Assert.ThrowsAsync<InsufficientFundsException>(
-                () => new LedgerService(db).PostAsync(withdrawal));
+                () => new LedgerService(db).PostAsync(withdrawal, Guid.NewGuid().ToString()));
             Assert.Equal(customer.Id, ex.AccountId);
         }
 
@@ -191,22 +191,23 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
             new(system.Id, new Money(-500, "GBP")),
             new(customer.Id, new Money(500, "GBP")),
         ];
-        Entry[] withdrawEntries =
+        var deposit = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, depositEntries);
+
+        Entry[] withdrawalEntries =
         [
             new(customer.Id, new Money(-300, "GBP")),
             new(system.Id, new Money(300, "GBP")),
         ];
+        var withdrawal = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, withdrawalEntries);
 
         await using (var db = _fixture.CreateContext())
         {
-            await new LedgerService(db).PostAsync(
-                new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, depositEntries));
+            await new LedgerService(db).PostAsync(deposit, Guid.NewGuid().ToString());
         }
 
         await using (var db = _fixture.CreateContext())
         {
-            await new LedgerService(db).PostAsync(
-                new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, withdrawEntries));
+            await new LedgerService(db).PostAsync(withdrawal, Guid.NewGuid().ToString());
         }
 
         await using var check = _fixture.CreateContext();
@@ -220,5 +221,36 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
             .Where(e => e.AccountId == customer.Id)
             .SumAsync(e => e.MinorUnits);
         Assert.Equal(customerSum, customerRow.Balance);
+    }
+
+    [Fact]
+    public async Task PostAsync_SavesIdempotencyKey()
+    {
+        var system = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
+        var customer = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+
+        await using (var setup = _fixture.CreateContext())
+        {
+            setup.Accounts.AddRange(system, customer);
+            await setup.SaveChangesAsync();
+        }
+
+        Entry[] entries =
+        [
+            new(system.Id, new Money(-1000, "GBP")),
+            new(customer.Id, new Money(1000, "GBP")),
+        ];
+        var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
+        var key = Guid.NewGuid().ToString();
+
+        await using (var db = _fixture.CreateContext())
+        {
+            await new LedgerService(db).PostAsync(transaction, key);
+        }
+
+        await using var check = _fixture.CreateContext();
+        var saved = await check.IdempotencyKeys.SingleAsync(k => k.Key == key);
+
+        Assert.Equal(transaction.Id, saved.TransactionId);
     }
 }

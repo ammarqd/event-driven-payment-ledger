@@ -87,6 +87,27 @@ namespace Ledger.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Ledger.Api.Persistence.IdempotencyKeyRow", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("text")
+                        .HasColumnName("key");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transaction_id");
+
+                    b.HasKey("Key");
+
+                    b.HasIndex("TransactionId");
+
+                    b.ToTable("idempotency_keys", (string)null);
+                });
+
             modelBuilder.Entity("Ledger.Api.Persistence.TransactionRow", b =>
                 {
                     b.Property<Guid>("Id")
@@ -111,6 +132,15 @@ namespace Ledger.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Ledger.Api.Persistence.TransactionRow", null)
+                        .WithMany()
+                        .HasForeignKey("TransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ledger.Api.Persistence.IdempotencyKeyRow", b =>
+                {
                     b.HasOne("Ledger.Api.Persistence.TransactionRow", null)
                         .WithMany()
                         .HasForeignKey("TransactionId")
