@@ -294,4 +294,39 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         Assert.Equal(0, await check.Transactions.CountAsync(t => t.Id == retry.Id));
         Assert.Equal(1000, (await check.Accounts.SingleAsync(a => a.Id == customer.Id)).Balance);
     }
+
+    [Fact]
+    public async Task PostAsync_SameKeyConcurrently_PostsOnce()
+    {
+        var system = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
+        var customer = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+
+        await using (var setup = _fixture.CreateContext())
+        {
+            setup.Accounts.AddRange(system, customer);
+            await setup.SaveChangesAsync();
+        }
+
+        Entry[] entries =
+        [
+            new(system.Id, new Money(-1000, "GBP")),
+            new(customer.Id, new Money(1000, "GBP")),
+        ];
+        var key = Guid.NewGuid().ToString();
+
+        var requests = Enumerable.Range(0, 10).Select(async _ =>
+        {
+            var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
+            await using var db = _fixture.CreateContext();
+            return await new LedgerService(db).PostAsync(transaction, key);
+        });
+
+        var results = await Task.WhenAll(requests);
+
+        Assert.Single(results.Distinct());
+
+        await using var check = _fixture.CreateContext();
+        Assert.Equal(1, await check.Entries.CountAsync(e => e.AccountId == customer.Id));
+        Assert.Equal(1000, (await check.Accounts.SingleAsync(a => a.Id == customer.Id)).Balance);
+    }
 }
