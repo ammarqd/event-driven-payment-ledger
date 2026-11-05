@@ -329,4 +329,60 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         Assert.Equal(1, await check.Entries.CountAsync(e => e.AccountId == customer.Id));
         Assert.Equal(1000, (await check.Accounts.SingleAsync(a => a.Id == customer.Id)).Balance);
     }
+
+    [Fact]
+    public async Task PostAsync_ParallelWithdrawals_NeverOverdraw()
+    {
+        var system = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP", Type = AccountType.System };
+        var customer = new AccountRow { Id = Guid.NewGuid(), Currency = "GBP" };
+
+        await using (var setup = _fixture.CreateContext())
+        {
+            setup.Accounts.AddRange(system, customer);
+            await setup.SaveChangesAsync();
+        }
+
+        Entry[] depositEntries =
+        [
+            new(system.Id, new Money(-100, "GBP")),
+            new(customer.Id, new Money(100, "GBP")),
+        ];
+        
+        await using (var db = _fixture.CreateContext())
+        {
+            await new LedgerService(db).PostAsync(
+                new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, depositEntries),
+                Guid.NewGuid().ToString());
+        }
+
+        var requests = Enumerable.Range(0, 50).Select(async _ =>
+        {
+            Entry[] entries =
+            [
+                new(customer.Id, new Money(-10, "GBP")),
+                new(system.Id, new Money(10, "GBP")),
+            ];
+            var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
+
+            await using var db = _fixture.CreateContext();
+            try
+            {
+                await new LedgerService(db).PostAsync(transaction, Guid.NewGuid().ToString());
+                return true;
+            }
+            catch (InsufficientFundsException)
+            {
+                return false;
+            }
+        });
+
+        var outcomes = await Task.WhenAll(requests);
+
+        Assert.Equal(10, outcomes.Count(o => o));
+        Assert.Equal(40, outcomes.Count(o => !o));
+
+        await using var check = _fixture.CreateContext();
+        var customerRow = await check.Accounts.SingleAsync(a => a.Id == customer.Id);
+        Assert.Equal(0, customerRow.Balance);
+    }
 }
