@@ -68,10 +68,11 @@ public class LedgerService
     
     public async Task<Money> GetBalanceAsync(Guid accountId)
     {
-        var account = await _db.Accounts
-            .AsNoTracking()
-            .SingleAsync(a => a.Id == accountId);
+        var accountData = await _db.Accounts
+            .Where(a => a.Id == accountId)
+            .Select(a => new { a.Balance, a.Currency })
+            .SingleAsync();
 
-        return new Money(account.Balance, account.Currency);
+        return new Money(accountData.Balance, accountData.Currency);
     }
 }
