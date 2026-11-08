@@ -12,8 +12,8 @@ public class TransactionMapperTests
         var createdAt = DateTimeOffset.UtcNow;
         Entry[] entries =
         [
-            new(Guid.NewGuid(), new Money(-1000, "GBP")),
-            new(Guid.NewGuid(), new Money(1000, "GBP")),
+            new(Guid.NewGuid(), new Money(-1000, Currency.Gbp)),
+            new(Guid.NewGuid(), new Money(1000, Currency.Gbp)),
         ];
         var transaction = new Transaction(id, createdAt, entries);
 
@@ -28,7 +28,7 @@ public class TransactionMapperTests
     {
         var transactionId = Guid.NewGuid();
         var accountId = Guid.NewGuid();
-        var entry = new Entry(accountId, new Money(-1000, "GBP"));
+        var entry = new Entry(accountId, new Money(-1000, Currency.Gbp));
 
         var row = TransactionMapper.ToEntryRow(transactionId, entry);
 
@@ -53,7 +53,7 @@ public class TransactionMapperTests
 
         var entry = TransactionMapper.ToEntry(row);
 
-        Assert.Equal(new Entry(accountId, new Money(-1000, "GBP")), entry);
+        Assert.Equal(new Entry(accountId, new Money(-1000, Currency.Gbp)), entry);
     }
 
     [Fact]
@@ -76,8 +76,8 @@ public class TransactionMapperTests
         Assert.Equal(transactionId, transaction.Id);
         Assert.Equal(createdAt, transaction.CreatedAt);
         Assert.Equal(2, transaction.Entries.Count);
-        Assert.Equal(new Entry(accountA, new Money(-1000, "GBP")), transaction.Entries[0]);
-        Assert.Equal(new Entry(accountB, new Money(1000, "GBP")), transaction.Entries[1]);
+        Assert.Equal(new Entry(accountA, new Money(-1000, Currency.Gbp)), transaction.Entries[0]);
+        Assert.Equal(new Entry(accountB, new Money(1000, Currency.Gbp)), transaction.Entries[1]);
     }
 
     [Fact]

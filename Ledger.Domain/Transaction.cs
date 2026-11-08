@@ -25,7 +25,7 @@ public sealed class Transaction
 
             if (total.MinorUnits != 0)
                 throw new ArgumentException(
-                    $"Entries must sum to zero in {group.Key}", nameof(entries));
+                    $"Entries must sum to zero in {group.Key.Code}", nameof(entries));
         }
 
         Id = id;

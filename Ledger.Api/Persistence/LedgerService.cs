@@ -17,7 +17,7 @@ public class LedgerService
         var row = new AccountRow
         {
             Id = Guid.NewGuid(),
-            Currency = Money.Zero(currency).Currency,
+            Currency = Currency.FromCode(currency).Code,
             Type = type,
             Balance = 0,
         };
@@ -56,9 +56,11 @@ public class LedgerService
         foreach (var entry in transaction.Entries)
         {
             var account = accounts[entry.AccountId];
-            if (entry.Amount.Currency != account.Currency)
+            var entryCurrency = entry.Amount.Currency.Code;
+
+            if (entryCurrency != account.Currency)
                 throw new CurrencyMismatchException(
-                    entry.AccountId, account.Currency, entry.Amount.Currency);
+                    entry.AccountId, account.Currency, entryCurrency);
         }
 
         var changes = transaction.Entries
@@ -103,6 +105,6 @@ public class LedgerService
             .Select(a => new { a.Balance, a.Currency })
             .SingleAsync();
 
-        return new Money(accountData.Balance, accountData.Currency);
+        return new Money(accountData.Balance, Currency.FromCode(accountData.Currency));
     }
 }

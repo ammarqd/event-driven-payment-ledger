@@ -27,8 +27,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         Entry[] entries =
         [
-            new(system.Id, new Money(-1000, "GBP")),
-            new(customer.Id, new Money(1000, "GBP")),
+            new(system.Id, new Money(-1000, Currency.Gbp)),
+            new(customer.Id, new Money(1000, Currency.Gbp)),
         ];
         var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
 
@@ -49,8 +49,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
     {
         Entry[] entries =
         [
-            new(Guid.NewGuid(), new Money(-1000, "GBP")),
-            new(Guid.NewGuid(), new Money(1000, "GBP")),
+            new(Guid.NewGuid(), new Money(-1000, Currency.Gbp)),
+            new(Guid.NewGuid(), new Money(1000, Currency.Gbp)),
         ];
         var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
 
@@ -81,8 +81,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         Entry[] entries =
         [
-            new(system.Id, new Money(-1000, "GBP")),
-            new(customer.Id, new Money(1000, "GBP")),
+            new(system.Id, new Money(-1000, Currency.Gbp)),
+            new(customer.Id, new Money(1000, Currency.Gbp)),
         ];
         var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
 
@@ -90,9 +90,9 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         var service = new LedgerService(db);
         await service.PostAsync(transaction, Guid.NewGuid().ToString());
 
-        Assert.Equal(new Money(-1000, "GBP"), await service.GetBalanceAsync(system.Id));
-        Assert.Equal(new Money(1000, "GBP"), await service.GetBalanceAsync(customer.Id));
-        Assert.Equal(Money.Zero("GBP"), await service.GetBalanceAsync(idle.Id));
+        Assert.Equal(new Money(-1000, Currency.Gbp), await service.GetBalanceAsync(system.Id));
+        Assert.Equal(new Money(1000, Currency.Gbp), await service.GetBalanceAsync(customer.Id));
+        Assert.Equal(Money.Zero(Currency.Gbp), await service.GetBalanceAsync(idle.Id));
     }
 
     [Fact]
@@ -110,8 +110,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         // Balanced in GBP, so the domain accepts it, but accountB holds USD.
         Entry[] entries =
         [
-            new(accountA.Id, new Money(-1000, "GBP")),
-            new(accountB.Id, new Money(1000, "GBP")),
+            new(accountA.Id, new Money(-1000, Currency.Gbp)),
+            new(accountB.Id, new Money(1000, Currency.Gbp)),
         ];
         var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
 
@@ -143,8 +143,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         // Deposit 500 so the customer has a real balance.
         Entry[] depositEntries =
         [
-            new(system.Id, new Money(-500, "GBP")),
-            new(customer.Id, new Money(500, "GBP")),
+            new(system.Id, new Money(-500, Currency.Gbp)),
+            new(customer.Id, new Money(500, Currency.Gbp)),
         ];
         var deposit = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, depositEntries);
 
@@ -156,8 +156,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         // Withdraw 600 from a balance of 500.
         Entry[] withdrawalEntries =
         [
-            new(customer.Id, new Money(-600, "GBP")),
-            new(system.Id, new Money(600, "GBP")),
+            new(customer.Id, new Money(-600, Currency.Gbp)),
+            new(system.Id, new Money(600, Currency.Gbp)),
         ];
         var withdrawal = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, withdrawalEntries);
 
@@ -188,15 +188,15 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         Entry[] depositEntries =
         [
-            new(system.Id, new Money(-500, "GBP")),
-            new(customer.Id, new Money(500, "GBP")),
+            new(system.Id, new Money(-500, Currency.Gbp)),
+            new(customer.Id, new Money(500, Currency.Gbp)),
         ];
         var deposit = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, depositEntries);
 
         Entry[] withdrawalEntries =
         [
-            new(customer.Id, new Money(-300, "GBP")),
-            new(system.Id, new Money(300, "GBP")),
+            new(customer.Id, new Money(-300, Currency.Gbp)),
+            new(system.Id, new Money(300, Currency.Gbp)),
         ];
         var withdrawal = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, withdrawalEntries);
 
@@ -237,8 +237,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         Entry[] entries =
         [
-            new(system.Id, new Money(-1000, "GBP")),
-            new(customer.Id, new Money(1000, "GBP")),
+            new(system.Id, new Money(-1000, Currency.Gbp)),
+            new(customer.Id, new Money(1000, Currency.Gbp)),
         ];
         var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
         var key = Guid.NewGuid().ToString();
@@ -268,8 +268,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         Entry[] entries =
         [
-            new(system.Id, new Money(-1000, "GBP")),
-            new(customer.Id, new Money(1000, "GBP")),
+            new(system.Id, new Money(-1000, Currency.Gbp)),
+            new(customer.Id, new Money(1000, Currency.Gbp)),
         ];
         var first = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
         var retry = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
@@ -309,8 +309,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         Entry[] entries =
         [
-            new(system.Id, new Money(-1000, "GBP")),
-            new(customer.Id, new Money(1000, "GBP")),
+            new(system.Id, new Money(-1000, Currency.Gbp)),
+            new(customer.Id, new Money(1000, Currency.Gbp)),
         ];
         var key = Guid.NewGuid().ToString();
 
@@ -344,8 +344,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
 
         Entry[] depositEntries =
         [
-            new(system.Id, new Money(-100, "GBP")),
-            new(customer.Id, new Money(100, "GBP")),
+            new(system.Id, new Money(-100, Currency.Gbp)),
+            new(customer.Id, new Money(100, Currency.Gbp)),
         ];
 
         await using (var db = _fixture.CreateContext())
@@ -359,8 +359,8 @@ public class LedgerServiceTests : IClassFixture<PostgresFixture>
         {
             Entry[] entries =
             [
-                new(customer.Id, new Money(-10, "GBP")),
-                new(system.Id, new Money(10, "GBP")),
+                new(customer.Id, new Money(-10, Currency.Gbp)),
+                new(system.Id, new Money(10, Currency.Gbp)),
             ];
             var transaction = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
 

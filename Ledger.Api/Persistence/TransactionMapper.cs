@@ -15,11 +15,11 @@ public static class TransactionMapper
         TransactionId = transactionId,
         AccountId = entry.AccountId,
         MinorUnits = entry.Amount.MinorUnits,
-        Currency = entry.Amount.Currency,
+        Currency = entry.Amount.Currency.Code,
     };
 
     public static Entry ToEntry(EntryRow row) =>
-        new(row.AccountId, new Money(row.MinorUnits, row.Currency));
+        new(row.AccountId, new Money(row.MinorUnits, Currency.FromCode(row.Currency)));
 
     public static Transaction ToTransaction(TransactionRow row, IEnumerable<EntryRow> entryRows) =>
         new(row.Id, row.CreatedAt, entryRows.Select(ToEntry));

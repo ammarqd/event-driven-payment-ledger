@@ -5,7 +5,7 @@ public class TransactionTests
     [Fact]
     public void SingleEntry_Throws()
     {
-        Entry[] entries = [new(Guid.NewGuid(), new Money(0, "GBP"))];
+        Entry[] entries = [new(Guid.NewGuid(), new Money(0, Currency.Gbp))];
 
         Assert.Throws<ArgumentException>(
             () => new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries));
@@ -16,8 +16,8 @@ public class TransactionTests
     {
         Entry[] entries =
         [
-            new(Guid.NewGuid(), new Money(-1000, "GBP")),
-            new(Guid.NewGuid(), new Money(1000, "GBP")),
+            new(Guid.NewGuid(), new Money(-1000, Currency.Gbp)),
+            new(Guid.NewGuid(), new Money(1000, Currency.Gbp)),
         ];
 
         var tx = new Transaction(Guid.NewGuid(), DateTimeOffset.UtcNow, entries);
@@ -30,8 +30,8 @@ public class TransactionTests
     {
         Entry[] entries =
         [
-            new(Guid.NewGuid(), new Money(-1000, "GBP")),
-            new(Guid.NewGuid(), new Money(900, "GBP")),
+            new(Guid.NewGuid(), new Money(-1000, Currency.Gbp)),
+            new(Guid.NewGuid(), new Money(900, Currency.Gbp)),
         ];
 
         Assert.Throws<ArgumentException>(
@@ -43,8 +43,8 @@ public class TransactionTests
     {
         Entry[] entries =
         [
-            new(Guid.NewGuid(), new Money(-500, "GBP")),
-            new(Guid.NewGuid(), new Money(500, "USD")),
+            new(Guid.NewGuid(), new Money(-500, Currency.Gbp)),
+            new(Guid.NewGuid(), new Money(500, Currency.Usd)),
         ];
 
         Assert.Throws<ArgumentException>(
